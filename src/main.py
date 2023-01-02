@@ -1,6 +1,6 @@
 import asyncio
 import websockets
-from handler import WebSocketHandler
+from server.handler import WebSocketHandler
 
 
 handler = WebSocketHandler()
