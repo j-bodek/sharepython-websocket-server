@@ -67,15 +67,14 @@ class WebSocketHandler(object):
         )
 
     async def insert_value(self, message, codespace_uuid, websocket) -> None:
-        if data := self.redis.hgetall(codespace_uuid):
-            data["code"] = (
-                data["code"][: message["input"]["position"]["start"]]
+        if data := await self.redis.hget(codespace_uuid, "code"):
+            data = (
+                data[: message["input"]["position"]["start"]]
                 + message["input"]["value"]
-                + data["code"][message["input"]["position"]["end"] :]
+                + data[message["input"]["position"]["end"] :]
             )
 
-            self.redis.hmset(codespace_uuid, data)
-
+            await self.redis.hset(codespace_uuid, "code", data)
             await self.broadcast(codespace_uuid, json.dumps(message))
 
     async def broadcast(self, codespace_uuid, msg):

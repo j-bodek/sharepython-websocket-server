@@ -1,4 +1,5 @@
-FROM python:3.11.1-alpine3.16
+# aioredis throw TimeoutError with python 3.11
+FROM python:3.10.9-alpine3.16
 
 # it tells docker to prevent buffer python (logs will be printed in the console)
 ENV PYTHONBUFFERED 1
