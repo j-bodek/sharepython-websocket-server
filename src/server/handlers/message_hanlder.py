@@ -22,6 +22,7 @@ class MessageHandler(object):
             handler = getattr(self, operation.lower())
         else:
             handler = self.operation_not_allowed
+
         await handler(message, codespace_uuid, client)
 
     async def operation_not_allowed(self, message, codespace_uuid, client):
@@ -38,7 +39,7 @@ class MessageHandler(object):
         )
 
     async def insert_value(self, message, codespace_uuid, client) -> None:
-        if data := await self.redis.hget(codespace_uuid, "code"):
+        if (data := await self.redis.hget(codespace_uuid, "code")) is not None:
             data = (
                 data[: message["input"]["position"]["start"]]
                 + message["input"]["value"]
