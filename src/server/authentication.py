@@ -7,7 +7,7 @@ class Authenticate(object):
     # host should be name of container instead of localhost
     api_base_url = "http://api:8000/api/"
 
-    async def __call__(self, websocket, token: str) -> None:
+    async def __call__(self, websocket, token: str) -> str:
         """
         Authenticate request by given token and if token is valid
         update codespace_uuid

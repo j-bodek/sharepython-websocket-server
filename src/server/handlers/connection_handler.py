@@ -10,7 +10,7 @@ class ConnectionHandler(object):
     channels = ChannelCache()
 
     @classmethod
-    async def __call__(cls, websocket, codespace_uuid):
+    async def __call__(cls, websocket, codespace_uuid, app):
 
         # This will be iterating over messages received on
         # the connection until the client disconnects
@@ -19,7 +19,7 @@ class ConnectionHandler(object):
 
         if is_created:
             # run channel.listen() method in background
-            asyncio.create_task(channel.listen())
+            app.add_task(channel.listen())
 
         client = await channel.register(websocket)
 
@@ -27,5 +27,4 @@ class ConnectionHandler(object):
             # listen client messages
             await client.listen()
         finally:
-            await client.close(1011, "Connection closed")
             await channel.leave(client)

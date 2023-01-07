@@ -15,7 +15,6 @@ class MessageHandler(object):
     async def dispatch(self, message, codespace_uuid, client):
         # Try to dispatch to the right operation; if a operation doesn't exist
         # close websocket connection
-
         message = json.loads(message)
         if (
             operation := message.get("operation")
@@ -23,7 +22,6 @@ class MessageHandler(object):
             handler = getattr(self, operation.lower())
         else:
             handler = self.operation_not_allowed
-
         await handler(message, codespace_uuid, client)
 
     async def operation_not_allowed(self, message, codespace_uuid, client):
@@ -53,7 +51,6 @@ class MessageHandler(object):
     @classmethod
     async def publish(cls, channel_id, msg):
         # this method is used to publish message via redis
-
         await cls.redis.publish(channel_id, msg)
 
 

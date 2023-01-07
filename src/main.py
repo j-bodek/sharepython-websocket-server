@@ -11,4 +11,4 @@ authenticate = Authenticate()
 @app.websocket("/<token:str>/")
 async def feed(request: Request, ws: Websocket, token: str):
     uuid = await authenticate(ws, token)
-    await connection_handler(ws, uuid)
+    await connection_handler(ws, uuid, app)
