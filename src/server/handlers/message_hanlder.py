@@ -15,15 +15,17 @@ class MessageHandler(object):
     async def dispatch(self, message, codespace_uuid, client):
         # Try to dispatch to the right operation; if a operation doesn't exist
         # close websocket connection
-        message = json.loads(message)
-        if (
-            operation := message.get("operation")
-        ) and operation in self.operation_names:
-            handler = getattr(self, operation.lower())
+        try:
+            message = json.loads(message)
+            operation = message.get("operation")
+        except AttributeError:
+            await client.close(1011, f"Message has no 'operation' attribute")
         else:
-            handler = self.operation_not_allowed
-
-        await handler(message, codespace_uuid, client)
+            if operation in self.operation_names:
+                handler = getattr(self, operation.lower())
+            else:
+                handler = self.operation_not_allowed
+            await handler(message, codespace_uuid, client)
 
     async def operation_not_allowed(self, message, codespace_uuid, client):
         """

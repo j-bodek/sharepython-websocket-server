@@ -1,5 +1,4 @@
 from server.channel import ChannelCache
-import asyncio
 
 
 class ConnectionHandler(object):
