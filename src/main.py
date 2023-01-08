@@ -1,14 +1,10 @@
 from sanic import Sanic, Request, Websocket
-from server.handlers import ConnectionHandler
-from server.authentication import Authenticate
+from server.handlers import connection_handler
+from typing import Type
 
 app = Sanic(name="WebSocketServer")
 
-connection_handler = ConnectionHandler()
-authenticate = Authenticate()
-
 
 @app.websocket("/<token:str>/")
-async def feed(request: Request, ws: Websocket, token: str):
-    uuid = await authenticate(ws, token)
-    await connection_handler(ws, uuid, app)
+async def codespace(request: Type[Request], ws: Type[Websocket], token: str) -> None:
+    await connection_handler(ws, token, request.app)

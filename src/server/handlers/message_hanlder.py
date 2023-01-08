@@ -1,19 +1,38 @@
 import logging
 import json
 from server.redis import REDIS
+from typing import Type
+from server.client import Client
 
 
 class MessageHandler(object):
+    """
+    This class is used to handle incoming websocket messages.
+    I created it to hermetise logic responsible for handling incoming messages,
+    and to prevent creation of huge client class
 
+    It handles messages in following format:
+    {
+        "operation":"operation_name",
+        **kwargs
+    }
+    """
+
+    # allowed operations
     operation_names = [
         "insert_value",
         "create_selection",
     ]
     redis = REDIS
 
-    async def dispatch(self, message, codespace_uuid, client):
-        # Try to dispatch to the right operation; if a operation doesn't exist
-        # close websocket connection
+    async def dispatch(
+        self, message: str, codespace_uuid: str, client: Type[Client]
+    ) -> None:
+        """
+        Try to dispatch to the right operation; if a operation doesn't exist
+        close websocket connection
+        """
+
         try:
             message = json.loads(message)
             operation = message.get("operation")
@@ -26,7 +45,9 @@ class MessageHandler(object):
                 handler = self.operation_not_allowed
             await handler(message, codespace_uuid, client)
 
-    async def operation_not_allowed(self, message, codespace_uuid, client):
+    async def operation_not_allowed(
+        self, message: str, codespace_uuid: str, client: Type[Client]
+    ) -> None:
         """
         Close websocket connection and return proper reason
         """
@@ -39,7 +60,17 @@ class MessageHandler(object):
             1011, f"'{message.get('operation')}' operation is not allowed"
         )
 
-    async def insert_value(self, message, codespace_uuid, client) -> None:
+    async def insert_value(
+        self, message: str, codespace_uuid: str, client: Type[Client]
+    ) -> None:
+        """
+        This operation updates codespace code saved in redis and send
+        message to redis pub/sub channel
+        """
+
+        # make sure to use asyncio lock when coroutine is suspended between
+        # retrieving data from redis and seting new value back. This will
+        # prevent race condition discribed here: https://superfastpython.com/asyncio-race-conditions/
         if (data := await self.redis.hget(codespace_uuid, "code")) is not None:
 
             # when updating string from last change we have sure
@@ -48,15 +79,22 @@ class MessageHandler(object):
             for change in message["changes"][::-1]:
                 data = data[: change["from"]] + change["insert"] + data[change["to"] :]
 
+            # set updated client value
             await self.redis.hset(codespace_uuid, "code", data)
             await self.publish(codespace_uuid, json.dumps(message))
 
-    async def create_selection(self, message, codespace_uuid, client) -> None:
+    async def create_selection(
+        self, message: str, codespace_uuid: str, client: Type[Client]
+    ) -> None:
+        """
+        This operation is used to handle create_selection operation
+        """
+
         await self.publish(codespace_uuid, json.dumps(message))
 
     @classmethod
-    async def publish(cls, channel_id, msg):
-        # this method is used to publish message via redis
+    async def publish(cls, channel_id: str, msg: str) -> None:
+        # this method is used to publish message via redis pub/sub channels
         await cls.redis.publish(channel_id, msg)
 
 

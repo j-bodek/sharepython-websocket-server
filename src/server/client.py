@@ -1,22 +1,30 @@
 import secrets
 import json
 from server.redis import REDIS
-from server.handlers.message_hanlder import message_handler
+from sanic import Websocket
+from typing import Type
 
 
 class Client(object):
+    """
+    This class wraps single websocket connection to represent connected
+    client
+    """
 
-    message_handler = message_handler
-
-    def __init__(self, protocol, channel_id):
+    def __init__(
+        self, protocol: Type[Websocket], channel_id: str, message_handler
+    ) -> None:
         self.id = secrets.token_urlsafe(12)
         self.protocol = protocol
         self.channel_id = channel_id
+        self.message_handler = message_handler
 
-    async def listen(self):
-        # this method listen for new websocket messages
+    async def listen(self) -> None:
+        """
+        Listen for incoming websocket messages
+        """
 
-        # send connected message
+        # send message informing about successfull connection
         await self.protocol.send(
             json.dumps(
                 {
@@ -26,17 +34,22 @@ class Client(object):
             )
         )
 
-        # listen for new messages
+        # This will be iterating over messages received on
+        # the connection until the client disconnects
         async for message in self.protocol:
             await self.message_handler.dispatch(message, self.channel_id, self)
 
-    async def publish(self, message):
-        # this method is used to publish message via redis
+    async def publish(self, message: str) -> None:
+        # this method is used to publish message via redis pub/sub
 
         await REDIS.publish(self.channel_id, message)
 
-    async def close(self, code: int, reason: str):
+    async def close(self, code: int, reason: str) -> None:
+        # close websocket connection
+
         await self.protocol.close(code, reason)
 
-    async def send(self, message):
+    async def send(self, message: str) -> None:
+        # send message only to client
+
         await self.protocol.send(message)

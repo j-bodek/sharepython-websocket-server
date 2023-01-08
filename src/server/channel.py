@@ -2,17 +2,27 @@ from server.client import Client
 from server.redis import REDIS
 import asyncio
 import aioredis
+from server.handlers.message_hanlder import message_handler
+from typing import Type
+from sanic import Websocket
 
 
 class Channel(object):
-    def __init__(self, cache, pubsub, channel_id):
+    """
+    This class is used to store Client instances and send received messages to them.
+    It represents communication channel created for particular codespace
+    """
+
+    def __init__(
+        self, cache, pubsub: Type[aioredis.client.PubSub], channel_id: str
+    ) -> None:
         self.clients = set()
         self.cache = cache
         self.pubsub = pubsub
         self.channel_id = channel_id
         self.lock = asyncio.Lock()
 
-    async def listen(self):
+    async def listen(self) -> None:
         """
         Listen new pubsub messages and send them to connected clients
         """
@@ -26,25 +36,35 @@ class Channel(object):
         except aioredis.exceptions.ConnectionError:
             print(f"PUBSUB closed <{self.channel_id}>")
 
-    async def broadcast(self, message):
+    async def broadcast(self, message: str) -> None:
         """
-        Send message to connected clients
+        Send message to all connected clients
         """
 
         payload = message["data"]
         for client in self.clients:
             await client.send(payload)
 
-    async def register(self, websocket):
+    async def register(self, websocket: Type[Websocket]) -> Type[Client]:
         """
-        Create new client instance and add it to client set
+        Create new client instance and add it to clients set
         """
+
         async with self.lock:
-            client = Client(protocol=websocket, channel_id=self.channel_id)
+            client = Client(
+                protocol=websocket,
+                channel_id=self.channel_id,
+                message_handler=message_handler,
+            )
             self.clients.add(client)
             return client
 
-    async def leave(self, client):
+    async def leave(self, client: Type[Client]) -> None:
+        """
+        Remove client from clients set and if no client left
+        destroy channel and reset pubsub
+        """
+
         async with self.lock:
             if client in self.clients:
                 await client.close(1011, "Connection closed")
@@ -56,11 +76,15 @@ class Channel(object):
 
 
 class ChannelCache(object):
+    """
+    This class is used to store and manage channel instances
+    """
+
     def __init__(self):
         self.channels = dict()
         self.lock = asyncio.Lock()
 
-    async def get_or_create(self, channel_id: str) -> Channel:
+    async def get_or_create(self, channel_id: str) -> Type[Channel]:
         """
         If channel exists create new one, and return it's instance.
         Otherwise just return channel instance
@@ -76,13 +100,17 @@ class ChannelCache(object):
             else:
                 return self.channels.get(channel_id), False
 
-    async def __add_channel(self, channel_id, channel):
+    async def __add_channel(self, channel_id: str, channel: Type[Channel]) -> None:
         """
         Add new channel to channels dict
         """
 
         self.channels[channel_id] = channel
 
-    async def destory_channel(self, channel_id):
+    async def destory_channel(self, channel_id: str) -> None:
+        """
+        Delete channel from channels dict
+        """
+
         async with self.lock:
             del self.channels[channel_id]
