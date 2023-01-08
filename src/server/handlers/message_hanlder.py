@@ -41,11 +41,18 @@ class MessageHandler(object):
 
     async def insert_value(self, message, codespace_uuid, client) -> None:
         if (data := await self.redis.hget(codespace_uuid, "code")) is not None:
+
+            # when updating string from last change we have sure
+            # that insertion index of previous ones remain unchanged
+            # because insertion can't overlap each others
             for change in message["changes"][::-1]:
                 data = data[: change["from"]] + change["insert"] + data[change["to"] :]
 
             await self.redis.hset(codespace_uuid, "code", data)
             await self.publish(codespace_uuid, json.dumps(message))
+
+    async def create_selection(self, message, codespace_uuid, client) -> None:
+        await self.publish(codespace_uuid, json.dumps(message))
 
     @classmethod
     async def publish(cls, channel_id, msg):
