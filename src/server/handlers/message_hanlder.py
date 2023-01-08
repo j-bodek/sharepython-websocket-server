@@ -7,8 +7,7 @@ class MessageHandler(object):
 
     operation_names = [
         "insert_value",
-        "remove_value",
-        "move_cursor",
+        "create_selection",
     ]
     redis = REDIS
 
@@ -42,11 +41,8 @@ class MessageHandler(object):
 
     async def insert_value(self, message, codespace_uuid, client) -> None:
         if (data := await self.redis.hget(codespace_uuid, "code")) is not None:
-            data = (
-                data[: message["input"]["position"]["start"]]
-                + message["input"]["value"]
-                + data[message["input"]["position"]["end"] :]
-            )
+            for change in message["changes"][::-1]:
+                data = data[: change["from"]] + change["insert"] + data[change["to"] :]
 
             await self.redis.hset(codespace_uuid, "code", data)
             await self.publish(codespace_uuid, json.dumps(message))
