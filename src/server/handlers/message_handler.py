@@ -1,11 +1,11 @@
-import logging
 import json
 from server.redis import REDIS
 from typing import Type
-from server.client import Client
+from server.base import AbstractClient
+from server.handlers.base import AbstractMessageHandler
 
 
-class MessageHandler(object):
+class MessageHandler(AbstractMessageHandler):
     """
     This class is used to handle incoming websocket messages.
     I created it to hermetise logic responsible for handling incoming messages,
@@ -25,43 +25,8 @@ class MessageHandler(object):
     ]
     redis = REDIS
 
-    async def dispatch(
-        self, message: str, codespace_uuid: str, client: Type[Client]
-    ) -> None:
-        """
-        Try to dispatch to the right operation; if a operation doesn't exist
-        close websocket connection
-        """
-
-        try:
-            message = json.loads(message)
-            operation = message.get("operation")
-        except AttributeError:
-            await client.close(1011, f"Message has no 'operation' attribute")
-        else:
-            if operation in self.operation_names:
-                handler = getattr(self, operation.lower())
-            else:
-                handler = self.operation_not_allowed
-            await handler(message, codespace_uuid, client)
-
-    async def operation_not_allowed(
-        self, message: str, codespace_uuid: str, client: Type[Client]
-    ) -> None:
-        """
-        Close websocket connection and return proper reason
-        """
-
-        logging.warning(
-            f"{message.get('operation')} Operation Is Not Allowed",
-        )
-
-        await client.close(
-            1011, f"'{message.get('operation')}' operation is not allowed"
-        )
-
     async def insert_value(
-        self, message: str, codespace_uuid: str, client: Type[Client]
+        self, message: str, codespace_uuid: str, client: Type[AbstractClient]
     ) -> None:
         """
         This operation updates codespace code saved in redis and send
@@ -84,7 +49,7 @@ class MessageHandler(object):
             await self.publish(codespace_uuid, json.dumps(message))
 
     async def create_selection(
-        self, message: str, codespace_uuid: str, client: Type[Client]
+        self, message: str, codespace_uuid: str, client: Type[AbstractClient]
     ) -> None:
         """
         This operation is used to handle create_selection operation

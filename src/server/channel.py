@@ -2,25 +2,25 @@ from server.client import Client
 from server.redis import REDIS
 import asyncio
 import aioredis
-from server.handlers.message_hanlder import message_handler
+from server.handlers.message_handler import message_handler
 from typing import Type
 from sanic import Websocket
+from dataclasses import dataclass, field
+from server.base import AbstractChannel, AbstractChannelCache
 
 
-class Channel(object):
+@dataclass(repr=False, slots=True)
+class Channel:
     """
     This class is used to store Client instances and send received messages to them.
     It represents communication channel created for particular codespace
     """
 
-    def __init__(
-        self, cache, pubsub: Type[aioredis.client.PubSub], channel_id: str
-    ) -> None:
-        self.clients = set()
-        self.cache = cache
-        self.pubsub = pubsub
-        self.channel_id = channel_id
-        self.lock = asyncio.Lock()
+    cache: Type[AbstractChannelCache]
+    pubsub: Type[aioredis.client.PubSub]
+    channel_id: str
+    clients: set = field(init=False, default_factory=lambda: set())
+    lock: Type[asyncio.Lock] = field(init=False, default_factory=lambda: asyncio.Lock())
 
     async def listen(self) -> None:
         """
@@ -75,16 +75,16 @@ class Channel(object):
                 await self.pubsub.reset()
 
 
-class ChannelCache(object):
+@dataclass(repr=False, slots=True)
+class ChannelCache(AbstractChannelCache):
     """
     This class is used to store and manage channel instances
     """
 
-    def __init__(self):
-        self.channels = dict()
-        self.lock = asyncio.Lock()
+    channels: set = field(init=False, default_factory=lambda: dict())
+    lock: Type[asyncio.Lock] = field(init=False, default_factory=lambda: asyncio.Lock())
 
-    async def get_or_create(self, channel_id: str) -> Type[Channel]:
+    async def get_or_create(self, channel_id: str) -> Type[AbstractChannel]:
         """
         If channel exists create new one, and return it's instance.
         Otherwise just return channel instance
@@ -94,13 +94,15 @@ class ChannelCache(object):
             if not channel_id in self.channels:
                 pubsub = REDIS.pubsub()
                 await pubsub.subscribe(channel_id)
-                channel = Channel(self, pubsub, channel_id)
+                channel = Channel(cache=self, pubsub=pubsub, channel_id=channel_id)
                 await self.__add_channel(channel_id, channel)
                 return channel, True
             else:
                 return self.channels.get(channel_id), False
 
-    async def __add_channel(self, channel_id: str, channel: Type[Channel]) -> None:
+    async def __add_channel(
+        self, channel_id: str, channel: Type[AbstractChannel]
+    ) -> None:
         """
         Add new channel to channels dict
         """

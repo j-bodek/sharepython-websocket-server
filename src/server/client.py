@@ -1,23 +1,25 @@
 import secrets
 import json
 from server.redis import REDIS
-from sanic import Websocket
 from typing import Type
+from dataclasses import dataclass, field
+from sanic import Websocket
+from server.handlers.base import AbstractMessageHandler
+from server.base import AbstractClient
 
-
-class Client(object):
+# slots makes instance attribute access faster and save some space
+# https://stackoverflow.com/a/28059785/14579046
+@dataclass(frozen=True, repr=False, slots=True)
+class Client(AbstractClient):
     """
     This class wraps single websocket connection to represent connected
     client
     """
 
-    def __init__(
-        self, protocol: Type[Websocket], channel_id: str, message_handler
-    ) -> None:
-        self.id = secrets.token_urlsafe(12)
-        self.protocol = protocol
-        self.channel_id = channel_id
-        self.message_handler = message_handler
+    id: str = field(init=False, default_factory=lambda: secrets.token_urlsafe(12))
+    protocol: Type[Websocket]
+    channel_id: str
+    message_handler: Type[AbstractMessageHandler]
 
     async def listen(self) -> None:
         """

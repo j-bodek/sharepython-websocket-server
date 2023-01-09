@@ -1,5 +1,5 @@
 from sanic import Sanic, Request, Websocket
-from server.handlers import connection_handler
+from server.handlers.connection_handler import connection_handler
 from typing import Type
 
 app = Sanic(name="WebSocketServer")

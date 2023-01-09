@@ -3,7 +3,7 @@ from typing import Type
 from sanic import Websocket
 
 
-class Authenticate(object):
+class Authenticate:
     """
     This class is used to authenticate incoming websocket connection.
     It sends async request to api to check given token

@@ -4,7 +4,7 @@ from sanic import Sanic, Websocket
 from typing import Type
 
 
-class ConnectionHandler(object):
+class ConnectionHandler:
     """
     This class is responsible for handling new websocket connections
     """
