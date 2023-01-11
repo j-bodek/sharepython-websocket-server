@@ -6,7 +6,7 @@ import os
 app = Sanic(name="WebSocketServer")
 
 
-@app.websocket("/<token:str>/")
+@app.websocket("codespace/<token:str>/")
 async def codespace(request: Type[Request], ws: Type[Websocket], token: str) -> None:
     await connection_handler(ws, token, request.app)
 

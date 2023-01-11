@@ -1,5 +1,3 @@
-import logging
-import json
 from typing import Type
 from server.base import AbstractClient
 from abc import ABC, abstractmethod
