@@ -3,9 +3,52 @@ from server.redis import REDIS
 from typing import Type
 from server.base import AbstractClient
 from server.handlers.base import AbstractMessageHandler
+import logging
 
 
-class MessageHandler(AbstractMessageHandler):
+class BaseMessageHandler(AbstractMessageHandler):
+    """
+    BaseMessageHandler provides generic methods dispatch and operation_not_allowed.
+    It can be used to create more complex message handlers
+    """
+
+    async def dispatch(
+        self, message: str, codespace_uuid: str, client: Type[AbstractClient]
+    ) -> None:
+        """
+        Try to dispatch to the right operation; if a operation doesn't exist
+        close websocket connection
+        """
+
+        try:
+            message = json.loads(message)
+            operation = message.get("operation")
+        except AttributeError:
+            await client.close(1011, f"Message has no 'operation' attribute")
+        else:
+            if operation in self.operation_names:
+                handler = getattr(self, operation.lower())
+            else:
+                handler = self.operation_not_allowed
+            await handler(message, codespace_uuid, client)
+
+    async def operation_not_allowed(
+        self, message: dict, codespace_uuid: str, client: Type[AbstractClient]
+    ) -> None:
+        """
+        Close websocket connection and return proper reason
+        """
+
+        logging.warning(
+            f"{message.get('operation')} Operation Is Not Allowed",
+        )
+
+        await client.close(
+            1011, f"'{message.get('operation')}' operation is not allowed"
+        )
+
+
+class MessageHandler(BaseMessageHandler):
     """
     This class is used to handle incoming websocket messages.
     I created it to hermetise logic responsible for handling incoming messages,

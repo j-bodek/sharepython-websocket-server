@@ -7,8 +7,7 @@ from abc import ABC, abstractmethod
 
 class AbstractMessageHandler(ABC):
     """
-    Abstract MessageHandler classs. Provides basic interface
-    that can be used to create more complex message handlers
+    Abstract MessageHandler class. Defines basic message handler interface
     """
 
     @classmethod
@@ -21,37 +20,14 @@ class AbstractMessageHandler(ABC):
     def redis(cls):
         raise NotImplementedError("'redis' class attribute is not specified")
 
+    @abstractmethod
     async def dispatch(
         self, message: str, codespace_uuid: str, client: Type[AbstractClient]
     ) -> None:
-        """
-        Try to dispatch to the right operation; if a operation doesn't exist
-        close websocket connection
-        """
+        pass
 
-        try:
-            message = json.loads(message)
-            operation = message.get("operation")
-        except AttributeError:
-            await client.close(1011, f"Message has no 'operation' attribute")
-        else:
-            if operation in self.operation_names:
-                handler = getattr(self, operation.lower())
-            else:
-                handler = self.operation_not_allowed
-            await handler(message, codespace_uuid, client)
-
+    @abstractmethod
     async def operation_not_allowed(
         self, message: dict, codespace_uuid: str, client: Type[AbstractClient]
     ) -> None:
-        """
-        Close websocket connection and return proper reason
-        """
-
-        logging.warning(
-            f"{message.get('operation')} Operation Is Not Allowed",
-        )
-
-        await client.close(
-            1011, f"'{message.get('operation')}' operation is not allowed"
-        )
+        pass
