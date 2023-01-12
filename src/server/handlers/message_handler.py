@@ -12,6 +12,9 @@ class BaseMessageHandler(AbstractMessageHandler):
     It can be used to create more complex message handlers
     """
 
+    operation_names = []
+    redis = None
+
     async def dispatch(
         self, message: str, codespace_uuid: str, client: Type[AbstractClient]
     ) -> None:
@@ -22,10 +25,13 @@ class BaseMessageHandler(AbstractMessageHandler):
 
         try:
             message = json.loads(message)
-            operation = message.get("operation")
-        except AttributeError:
+            operation = message["operation"]
+        except (ValueError, AttributeError):
             await client.close(1011, f"Message has no 'operation' attribute")
         else:
+            # to check allowed operation is used class attribute instead of checking of method
+            # exists by has attr because if method exists it doesn't mean that it should be treated
+            # as operation (for example dispatch, if it will be called infinie loop will occure)
             if operation in self.operation_names:
                 handler = getattr(self, operation.lower())
             else:

@@ -10,7 +10,7 @@ from server.base import AbstractChannel, AbstractChannelCache
 
 
 @dataclass(repr=False, slots=True)
-class Channel:
+class Channel(AbstractChannel):
     """
     This class is used to store Client instances and send received messages to them.
     It represents communication channel created for particular codespace
@@ -45,19 +45,24 @@ class Channel:
         for client in self.clients:
             await client.send(payload)
 
-    async def register(self, websocket: Type[Websocket]) -> Type[Client]:
+    async def register(self, client: Type[Client]):
         """
-        Create new client instance and add it to clients set
+        Add client to clients set
         """
 
         async with self.lock:
-            client = Client(
-                protocol=websocket,
-                channel_id=self.channel_id,
-                message_handler=message_handler,
-            )
             self.clients.add(client)
             return client
+
+    async def create_client(self, websocket: Type[Websocket]) -> Type[Client]:
+        """
+        Create and return new client instance
+        """
+        return Client(
+            protocol=websocket,
+            channel_id=self.channel_id,
+            message_handler=message_handler,
+        )
 
     async def leave(self, client: Type[Client]) -> None:
         """
@@ -71,7 +76,7 @@ class Channel:
                 self.clients.remove(client)
 
             if not self.clients:
-                await self.cache.destory_channel(self.channel_id)
+                await self.cache.destroy_channel(self.channel_id)
                 await self.pubsub.reset()
 
 
@@ -109,7 +114,7 @@ class ChannelCache(AbstractChannelCache):
 
         self.channels[channel_id] = channel
 
-    async def destory_channel(self, channel_id: str) -> None:
+    async def destroy_channel(self, channel_id: str) -> None:
         """
         Delete channel from channels dict
         """

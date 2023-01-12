@@ -2,6 +2,9 @@ from server.channel import ChannelCache
 from server.authentication import Authenticate
 from sanic import Sanic, Websocket
 from typing import Type
+from server.base import AbstractClient
+import json
+from server.client import Client
 
 
 class ConnectionHandler:
@@ -32,7 +35,9 @@ class ConnectionHandler:
             app.add_task(channel.listen())
 
         # register new client in channel
-        client = await channel.register(websocket)
+        client = await channel.create_client(websocket)
+        await channel.register(client)
+        await cls.send_connection_succeed_msg(client)
 
         try:
             # listen new messages coming from websocket connection
@@ -50,6 +55,22 @@ class ConnectionHandler:
         """
 
         return await cls.authentication(websocket, token)
+
+    @classmethod
+    async def send_connection_succeed_msg(cls, client: Type[AbstractClient]) -> None:
+        """
+        Inform client about successfull connection. In response send
+        id assigned to client in channel
+        """
+
+        await client.send(
+            json.dumps(
+                {
+                    "operation": "connected",
+                    "data": {"id": client.id},
+                }
+            )
+        )
 
 
 connection_handler = ConnectionHandler()

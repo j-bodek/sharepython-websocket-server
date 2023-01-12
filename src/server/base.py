@@ -35,5 +35,5 @@ class AbstractChannelCache(ABC):
         pass
 
     @abstractmethod
-    async def destory_channel(self, code: int, reason: str):
+    async def destroy_channel(self, code: int, reason: str):
         pass

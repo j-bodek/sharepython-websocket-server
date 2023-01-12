@@ -1,5 +1,4 @@
 import secrets
-import json
 from server.redis import REDIS
 from typing import Type
 from dataclasses import dataclass, field
@@ -25,16 +24,6 @@ class Client(AbstractClient):
         """
         Listen for incoming websocket messages
         """
-
-        # send message informing about successfull connection
-        await self.protocol.send(
-            json.dumps(
-                {
-                    "operation": "connected",
-                    "data": {"id": self.id},
-                }
-            )
-        )
 
         # This will be iterating over messages received on
         # the connection until the client disconnects
