@@ -52,7 +52,6 @@ class Channel(AbstractChannel):
 
         async with self.lock:
             self.clients.add(client)
-            return client
 
     async def create_client(self, websocket: Type[Websocket]) -> Type[Client]:
         """
@@ -99,11 +98,20 @@ class ChannelCache(AbstractChannelCache):
             if not channel_id in self.channels:
                 pubsub = REDIS.pubsub()
                 await pubsub.subscribe(channel_id)
-                channel = Channel(cache=self, pubsub=pubsub, channel_id=channel_id)
+                channel = await self.__create_channel(pubsub, channel_id)
                 await self.__add_channel(channel_id, channel)
                 return channel, True
             else:
                 return self.channels.get(channel_id), False
+
+    async def __create_channel(
+        self, pubsub: REDIS.pubsub, channel_id: str
+    ) -> Type[AbstractChannel]:
+        """
+        Creates and return new channel instance
+        """
+
+        return Channel(cache=self, pubsub=pubsub, channel_id=channel_id)
 
     async def __add_channel(
         self, channel_id: str, channel: Type[AbstractChannel]
