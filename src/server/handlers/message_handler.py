@@ -27,11 +27,12 @@ class BaseMessageHandler(AbstractMessageHandler):
             message = json.loads(message)
             operation = message["operation"]
         except (ValueError, TypeError):
-            await client.close(1011, f"Message has no 'operation' attribute")
+            await client.close(1011, "Message does not have specified 'operation'")
         else:
-            # to check allowed operation is used class attribute instead of checking of method
-            # exists by has attr because if method exists it doesn't mean that it should be treated
-            # as operation (for example dispatch, if it will be called infinie loop will occure)
+            # to check allowed operation is used class attribute instead of checking
+            # of method exists by has attr because if method exists it doesn't mean
+            # that it should be treated as operation (for example dispatch, if it
+            # will be called infinie loop will occure)
             if operation in self.operation_names:
                 handler = getattr(self, operation.lower())
             else:
@@ -82,9 +83,9 @@ class MessageHandler(BaseMessageHandler):
         message to redis pub/sub channel
         """
 
-        # make sure to use asyncio lock when coroutine is suspended between
-        # retrieving data from redis and seting new value back. This will
-        # prevent race condition discribed here: https://superfastpython.com/asyncio-race-conditions/
+        # make sure to use asyncio lock when coroutine is suspended between retrieving
+        # data from redis and seting new value back. This will prevent race condition
+        # discribed here: https://superfastpython.com/asyncio-race-conditions/
         if (code := await self.redis.hget(codespace_uuid, "code")) is not None:
 
             # this function shouldn't be async because data value is copied form redis
@@ -108,7 +109,9 @@ class MessageHandler(BaseMessageHandler):
         """
 
         for change in message["changes"][::-1]:
-            code = code[: change["from"]] + change["insert"] + code[change["to"] :]
+            code = (
+                code[: change["from"]] + change["insert"] + code[change["to"] :]  # noqa
+            )
 
         return code
 

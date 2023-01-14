@@ -60,7 +60,8 @@ class TestChannel(IsolatedAsyncioTestCase):
 
     async def test_leave_method(self):
         """
-        Test if leave method close client connection and remove it instance from clients set
+        Test if leave method close client connection and remove
+        it instance from clients set
         """
         client1 = mock.AsyncMock()
         client2 = mock.AsyncMock()
@@ -72,8 +73,8 @@ class TestChannel(IsolatedAsyncioTestCase):
 
     async def test_leave_method_with_last_client(self):
         """
-        Test if leave method close client connection and remove it instance from clients set and
-        if destroy channel and reset pubsub
+        Test if leave method close client connection and remove it instance
+        from clients set and if destroy channel and reset pubsub
         """
 
         client1 = mock.AsyncMock()

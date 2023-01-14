@@ -95,7 +95,7 @@ class ChannelCache(AbstractChannelCache):
         """
 
         async with self.lock:
-            if not channel_id in self.channels:
+            if channel_id not in self.channels:
                 pubsub = REDIS.pubsub()
                 await pubsub.subscribe(channel_id)
                 channel = await self.__create_channel(pubsub, channel_id)

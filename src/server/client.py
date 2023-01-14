@@ -6,6 +6,7 @@ from sanic import Websocket
 from server.handlers.base import AbstractMessageHandler
 from server.base import AbstractClient
 
+
 # slots makes instance attribute access faster and save some space
 # https://stackoverflow.com/a/28059785/14579046
 @dataclass(frozen=True, repr=False, slots=True)

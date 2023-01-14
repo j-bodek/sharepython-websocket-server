@@ -44,11 +44,12 @@ jobs:
           paths:
             - "venv"
       - run:
-          name: Running tests
+          name: Running tests and linting checks
           command: |
             . venv/bin/activate
             cd src
             python3 -m pytest
+            python3 -m flake8
 
       - store_artifacts:
           path: test-reports/
