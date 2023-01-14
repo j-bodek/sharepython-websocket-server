@@ -26,7 +26,7 @@ class BaseMessageHandler(AbstractMessageHandler):
         try:
             message = json.loads(message)
             operation = message["operation"]
-        except (ValueError, AttributeError):
+        except (ValueError, TypeError):
             await client.close(1011, f"Message has no 'operation' attribute")
         else:
             # to check allowed operation is used class attribute instead of checking of method
