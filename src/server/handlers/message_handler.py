@@ -75,7 +75,7 @@ class MessageHandler(BaseMessageHandler):
     redis = REDIS
 
     async def insert_value(
-        self, message: str, codespace_uuid: str, client: Type[AbstractClient]
+        self, message: dict, codespace_uuid: str, client: Type[AbstractClient]
     ) -> None:
         """
         This operation updates codespace code saved in redis and send
@@ -85,20 +85,35 @@ class MessageHandler(BaseMessageHandler):
         # make sure to use asyncio lock when coroutine is suspended between
         # retrieving data from redis and seting new value back. This will
         # prevent race condition discribed here: https://superfastpython.com/asyncio-race-conditions/
-        if (data := await self.redis.hget(codespace_uuid, "code")) is not None:
+        if (code := await self.redis.hget(codespace_uuid, "code")) is not None:
 
-            # when updating string from last change we have sure
-            # that insertion index of previous ones remain unchanged
-            # because insertion can't overlap each others
-            for change in message["changes"][::-1]:
-                data = data[: change["from"]] + change["insert"] + data[change["to"] :]
+            # this function shouldn't be async because data value is copied form redis
+            # and during update another worker can retrieve code data before updated
+            # data will be saved
+            code = self.__update_code_with_changes(code, message)
 
             # set updated client value
-            await self.redis.hset(codespace_uuid, "code", data)
+            await self.redis.hset(codespace_uuid, "code", code)
             await self.publish(codespace_uuid, json.dumps(message))
 
+    def __update_code_with_changes(self, code: str, message: dict) -> str:
+        """
+        when updating string from last change we can be sure
+        that insertion index of previous ones remain unchanged
+        because insertion can't overlap each others
+        message["changes"] is list in following format:
+        [
+            {"from":int, "to":int, "insert":str},
+        ]
+        """
+
+        for change in message["changes"][::-1]:
+            code = code[: change["from"]] + change["insert"] + code[change["to"] :]
+
+        return code
+
     async def create_selection(
-        self, message: str, codespace_uuid: str, client: Type[AbstractClient]
+        self, message: dict, codespace_uuid: str, client: Type[AbstractClient]
     ) -> None:
         """
         This operation is used to handle create_selection operation

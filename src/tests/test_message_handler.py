@@ -1,5 +1,5 @@
 from unittest import IsolatedAsyncioTestCase, mock
-from server.handlers.message_handler import BaseMessageHandler, MessageHandler
+from server.handlers.message_handler import BaseMessageHandler, message_handler
 import json
 
 
@@ -61,3 +61,110 @@ class TestBaseMessageHandler(IsolatedAsyncioTestCase):
             {"operation": "invalid_operation"}, "codespace_uuid", mocked_client
         )
         self.assertEqual(mocked_client.close.call_count, 1)
+
+
+class TestMessageHandler(IsolatedAsyncioTestCase):
+    """
+    Test MessageHandler class
+    """
+
+    def setUp(self):
+        self.message_handler = message_handler
+
+    @mock.patch(
+        "server.handlers.message_handler.MessageHandler.redis",
+        new_callable=mock.AsyncMock,
+    )
+    async def test_insert_with_unexisting_codespace(self, patched_redis):
+        """
+        Test if code for codespace_uuid does not exists in redis
+        """
+        patched_redis.hget.return_value = None
+        await self.message_handler.insert_value({}, "codespace_uuid", mock.AsyncMock())
+        self.assertEqual(patched_redis.hset.call_count, 0)
+
+    @mock.patch(
+        "server.handlers.message_handler.MessageHandler.redis",
+        new_callable=mock.AsyncMock,
+    )
+    @mock.patch(
+        "server.handlers.message_handler.MessageHandler.publish",
+        new_callable=mock.AsyncMock,
+    )
+    async def test_if_code_exists(self, patched_publish, patched_redis):
+        """
+        Test if code exists redis.hset with updated code should be called
+        and publish method with incoming message
+        """
+
+        patched_redis.hget.return_value = ""
+        await self.message_handler.insert_value(
+            {"changes": []}, "codespace_uuid", mock.AsyncMock()
+        )
+        self.assertEqual(patched_redis.hset.call_count, 1)
+        self.assertEqual(patched_publish.call_count, 1)
+
+    @mock.patch(
+        "server.handlers.message_handler.MessageHandler.redis",
+        new_callable=mock.AsyncMock,
+    )
+    def test_insert_with_one_change(self, patched_redis):
+        """
+        Test if code is updated properly with one change
+        """
+
+        changes = [
+            {"from": 6, "to": 11, "insert": "World"},
+        ]
+        code = "Hello dlroW"
+        code = self.message_handler._MessageHandler__update_code_with_changes(
+            code, {"changes": changes}
+        )
+        self.assertEqual(code, "Hello World")
+
+    @mock.patch(
+        "server.handlers.message_handler.MessageHandler.redis",
+        new_callable=mock.AsyncMock,
+    )
+    def test_insert_with_multiple_changes(self, patched_redis):
+        """
+        Test if code is updated properly with multiple changes
+        """
+
+        changes = [
+            {"from": 5, "to": 5, "insert": " Great"},
+            {"from": 6, "to": 11, "insert": "World"},
+        ]
+        code = "Hello dlroW"
+        code = self.message_handler._MessageHandler__update_code_with_changes(
+            code, {"changes": changes}
+        )
+        self.assertEqual(code, "Hello Great World")
+
+    @mock.patch(
+        "server.handlers.message_handler.MessageHandler.publish",
+        new_callable=mock.AsyncMock,
+    )
+    async def test_create_selection(self, patched_publish):
+        """
+        Test if publish method is called with codespace_uuid and incoming message
+        """
+
+        await self.message_handler.create_selection(
+            {"operation": "create_selection"}, "codespace_uuid", "client"
+        )
+        patched_publish.assert_called_once_with(
+            "codespace_uuid", json.dumps({"operation": "create_selection"})
+        )
+
+    @mock.patch(
+        "server.handlers.message_handler.MessageHandler.redis",
+        new_callable=mock.AsyncMock,
+    )
+    async def test_publish_method(self, patched_redis):
+        """
+        Test if incoming message is published properly to redis pub/sub channel
+        """
+
+        await self.message_handler.publish("channel_id", "msg")
+        patched_redis.publish.assert_called_once_with("channel_id", "msg")
