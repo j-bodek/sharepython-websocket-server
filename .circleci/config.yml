@@ -1,0 +1,60 @@
+version: 2.1
+orbs:
+  python: circleci/python@1.5.0
+  
+services:
+  redis_db:
+    image: cimg/redis:7.0.5
+
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - run: sudo apt-get update
+      - run: sudo apt-get install postgresql-client
+      - run: whoami
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Install Redis
+          command: |
+            sudo apt-get install -y redis-server
+      - run:
+          name: Start Redis
+          command: redis-server --save 20 1 --loglevel warning --port 6379 --requirepass dev_redispass --daemonize yes
+      - run:
+          name: Wait for Redis
+          command: |
+            set -e
+            until redis-cli ping; do sleep 1; done
+      - run:
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+            pip install -r requirements.dev.txt
+      - save_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          paths:
+            - "venv"
+      - save_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "requirements.dev.txt" }}
+          paths:
+            - "venv"
+      - run:
+          name: Running tests
+          command: |
+            . venv/bin/activate
+            cd src
+            python3 -m pytest
+
+      - store_artifacts:
+          path: test-reports/
+          destination: python_app
+
+workflows:
+  pythonshare-websocket_server-test:
+    jobs:
+      - build-and-test
