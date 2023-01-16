@@ -95,6 +95,8 @@ class MessageHandler(BaseMessageHandler):
 
             # set updated client value
             await self.redis.hset(codespace_uuid, "code", code)
+            # update expire time
+            await self.redis.expire(codespace_uuid, client.codespace_expire_update)
             await self.publish(codespace_uuid, json.dumps(message))
 
     def __update_code_with_changes(self, code: str, message: dict) -> str:

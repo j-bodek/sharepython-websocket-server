@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from sanic import Websocket
 from server.handlers.base import AbstractMessageHandler
 from server.base import AbstractClient
-
+import os
 
 # slots makes instance attribute access faster and save some space
 # https://stackoverflow.com/a/28059785/14579046
@@ -20,6 +20,24 @@ class Client(AbstractClient):
     protocol: Type[Websocket]
     channel_id: str
     message_handler: Type[AbstractMessageHandler]
+    # this value will be used to update codespace expiration
+    # time everytime client add changes
+    codespace_expire_update: int = field(init=False, default=0)
+
+    def __post_init__(self):
+        """
+        Set codespace expire update
+        """
+
+        if self.channel_id.startswith("tmp-"):
+            codespace_expire_update = int(
+                os.environ.get("TMP_CODESPACE_EXPIRE_UPDATE", 0)
+            )
+        else:
+            codespace_expire_update = int(os.environ.get("CODESPACE_EXPIRE_UPDATE", 0))
+
+        # because dataclass is frozen regular setattr will raise error
+        object.__setattr__(self, "codespace_expire_update", codespace_expire_update)
 
     async def listen(self) -> None:
         """
