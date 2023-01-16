@@ -98,6 +98,8 @@ class MessageHandler(BaseMessageHandler):
             # update expire time
             await self.redis.expire(codespace_uuid, client.codespace_expire_update)
             await self.publish(codespace_uuid, json.dumps(message))
+        else:
+            client.close(1011, "Can't find data for given codespace")
 
     def __update_code_with_changes(self, code: str, message: dict) -> str:
         """
