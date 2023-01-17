@@ -21,6 +21,9 @@ class Channel(AbstractChannel):
     channel_id: str
     clients: set = field(init=False, default_factory=lambda: set())
     lock: Type[asyncio.Lock] = field(init=False, default_factory=lambda: asyncio.Lock())
+    # define messages that should be handled by channel not clients
+    # for example 'expire' message send when codespace data is expired
+    handle_messages: list = field(init=False, default_factory=lambda: ["expired"])
 
     async def listen(self) -> None:
         """
@@ -31,10 +34,23 @@ class Channel(AbstractChannel):
                 if message["type"] != "message":
                     continue
 
-                await self.broadcast(message)
+                if message["data"] in self.handle_messages:
+                    await getattr(self, message["data"])()
+                else:
+                    # if message is not handled by channel
+                    # broadcast it to clients
+                    await self.broadcast(message)
 
         except aioredis.exceptions.ConnectionError:
             print(f"PUBSUB closed <{self.channel_id}>")
+
+    async def expired(self) -> None:
+        """
+        Close connection for every client
+        """
+
+        for client in self.clients:
+            await client.close(1011, "Codespace data expired from cache")
 
     async def broadcast(self, message: str) -> None:
         """
@@ -98,6 +114,7 @@ class ChannelCache(AbstractChannelCache):
             if channel_id not in self.channels:
                 pubsub = REDIS.pubsub()
                 await pubsub.subscribe(channel_id)
+                await pubsub.subscribe(f"__keyspace@0__:{channel_id}")
                 channel = await self.__create_channel(pubsub, channel_id)
                 await self.__add_channel(channel_id, channel)
                 return channel, True
