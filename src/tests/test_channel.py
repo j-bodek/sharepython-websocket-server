@@ -21,12 +21,34 @@ class TestChannel(IsolatedAsyncioTestCase):
         Test if broadcast method is called
         """
 
-        self.pubsub.listen.return_value.__aiter__.return_value = [
-            {"type": "message"},
-        ]
+        message = {"type": "message", "data": "some_data"}
+        self.pubsub.listen.return_value.__aiter__.return_value = [message]
         await self.channel.listen()
         self.assertEqual(patched_broadcast.call_count, 1)
-        patched_broadcast.assert_called_once_with({"type": "message"})
+        patched_broadcast.assert_called_once_with(message)
+
+    async def test_listen_method_with_message_from_handle_messages(self):
+        """
+        Test if corresponding method will be called instead of client.broadcast
+        """
+
+        self.channel.handle_messages = ["handled_message"]
+        self.channel.handled_message = mock.AsyncMock()
+        message = {"type": "message", "data": "handled_message"}
+        self.pubsub.listen.return_value.__aiter__.return_value = [message]
+        await self.channel.listen()
+        self.assertEqual(self.channel.handled_message.call_count, 1)
+
+    async def test_expired_method(self):
+        """
+        Test if all clients connections are closed
+        """
+
+        clients = {mock.AsyncMock(), mock.AsyncMock()}
+        self.channel.clients = clients
+        await self.channel.expired()
+        for client in clients:
+            self.assertEqual(client.close.call_count, 1)
 
     @mock.patch("server.channel.Channel.broadcast")
     async def test_listen_method_with_message_type_not_message(self, patched_broadcast):
@@ -125,7 +147,11 @@ class TestChannelCache(IsolatedAsyncioTestCase):
         self.assertEqual(channel.id, channel_id)
         self.assertTrue(is_created)
         self.assertEqual(len(self.cache.channels), 1)
-        mocked_pubsub_instace.subscribe.assert_called_once_with(channel_id)
+        # test if subscribed to expire event, and main channel
+        self.assertCountEqual(
+            mocked_pubsub_instace.subscribe.call_args_list,
+            [mock.call(channel_id), mock.call(f"__keyspace@0__:{channel_id}")],
+        )
 
     async def test_add_channel_method(self):
         """

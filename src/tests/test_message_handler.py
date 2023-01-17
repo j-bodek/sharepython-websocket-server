@@ -80,8 +80,10 @@ class TestMessageHandler(IsolatedAsyncioTestCase):
         Test if code for codespace_uuid does not exists in redis
         """
         patched_redis.hget.return_value = None
-        await self.message_handler.insert_value({}, "codespace_uuid", mock.AsyncMock())
+        client = mock.AsyncMock()
+        await self.message_handler.insert_value({}, "codespace_uuid", client)
         self.assertEqual(patched_redis.hset.call_count, 0)
+        self.assertEqual(client.close.call_count, 1)
 
     @mock.patch(
         "server.handlers.message_handler.MessageHandler.redis",
@@ -91,7 +93,7 @@ class TestMessageHandler(IsolatedAsyncioTestCase):
         "server.handlers.message_handler.MessageHandler.publish",
         new_callable=mock.AsyncMock,
     )
-    async def test_if_code_exists(self, patched_publish, patched_redis):
+    async def test_insert_if_code_exists(self, patched_publish, patched_redis):
         """
         Test if code exists redis.hset with updated code should be called
         and publish method with incoming message
