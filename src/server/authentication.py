@@ -15,10 +15,11 @@ class Authenticate:
 
     async def __call__(
         self, websocket: Type[Websocket], token: str
-    ) -> tuple[str, bool]:
+    ) -> tuple[str, str, bool]:
         """
         Authenticate request by given token and if token is valid
-        return codespace uuid, and is_created value set to True
+        return codespace uuid, mode (used to determine client permissions),
+        and is_created value set to True
         """
 
         if not token:
@@ -28,7 +29,7 @@ class Authenticate:
         # send async request
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"{self.api_base_url}codespace/{token}/?fields=uuid"
+                f"{self.api_base_url}codespace/{token}/?fields=uuid,mode"
             ) as resp:
 
                 if resp.status != 200:
@@ -36,4 +37,4 @@ class Authenticate:
                     return None, False
 
                 data = await resp.json()
-                return data["uuid"], True
+                return data["uuid"], data["mode"], True

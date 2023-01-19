@@ -19,6 +19,8 @@ class Client(AbstractClient):
 
     id: str = field(init=False, default_factory=lambda: secrets.token_urlsafe(12))
     protocol: Type[Websocket]
+    # mode will be then used to determine which operation client can do
+    mode: str
     channel_id: str
     message_handler: Type[AbstractMessageHandler]
     # this value will be used to update codespace expiration

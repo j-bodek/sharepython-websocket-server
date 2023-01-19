@@ -12,7 +12,8 @@ class BaseMessageHandler(AbstractMessageHandler):
     It can be used to create more complex message handlers
     """
 
-    operation_names = []
+    # operation name is dict of allowed operations for each client mode
+    operation_names = {}
     redis = None
 
     async def dispatch(
@@ -33,7 +34,7 @@ class BaseMessageHandler(AbstractMessageHandler):
             # of method exists by has attr because if method exists it doesn't mean
             # that it should be treated as operation (for example dispatch, if it
             # will be called infinie loop will occure)
-            if operation in self.operation_names:
+            if operation in self.operation_names[client.mode]:
                 handler = getattr(self, operation.lower())
             else:
                 handler = self.operation_not_allowed
@@ -69,10 +70,10 @@ class MessageHandler(BaseMessageHandler):
     """
 
     # allowed operations
-    operation_names = [
-        "insert_value",
-        "create_selection",
-    ]
+    operation_names = {
+        "edit": ["insert_value", "create_selection"],
+        "view_only": [],
+    }
     redis = REDIS
 
     async def insert_value(

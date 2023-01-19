@@ -69,12 +69,16 @@ class Channel(AbstractChannel):
         async with self.lock:
             self.clients.add(client)
 
-    async def create_client(self, websocket: Type[Websocket]) -> Type[Client]:
+    async def create_client(
+        self, websocket: Type[Websocket], mode: str
+    ) -> Type[Client]:
         """
         Create and return new client instance
         """
+
         return Client(
             protocol=websocket,
+            mode=mode,
             channel_id=self.channel_id,
             message_handler=message_handler,
         )

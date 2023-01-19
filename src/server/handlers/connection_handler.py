@@ -19,7 +19,7 @@ class ConnectionHandler:
         cls, websocket: Type[Websocket], token: str, app: Type[Sanic]
     ) -> None:
         # Authenticate incoming connection
-        codespace_uuid, is_authenticated = await cls.perform_authentication(
+        codespace_uuid, mode, is_authenticated = await cls.perform_authentication(
             websocket, token
         )
 
@@ -33,7 +33,7 @@ class ConnectionHandler:
         cls.add_channel_listener(is_created, channel, app)
 
         # register new client in channel
-        client = await channel.create_client(websocket)
+        client = await channel.create_client(websocket, mode)
         await channel.register(client)
         await cls.send_connection_succeed_msg(client)
         await cls.add_client_listener(client, channel)
@@ -85,7 +85,10 @@ class ConnectionHandler:
             message=json.dumps(
                 {
                     "operation": "connected",
-                    "data": {"id": client.id},
+                    "data": {
+                        "id": client.id,
+                        "mode": client.mode,
+                    },
                 }
             )
         )
