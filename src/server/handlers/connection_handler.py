@@ -67,10 +67,16 @@ class ConnectionHandler:
     @classmethod
     async def perform_authentication(
         cls, websocket: Type[Websocket], token: str
-    ) -> tuple[str, bool]:
+    ) -> tuple[str, str, bool]:
         """
         Perform authentication. Returns codespace uuid, and is_authenticated
         """
+
+        if token.startswith("tmp-"):
+            # if token is temporary prevent calling authentication
+            # endpoint, when codespce is temporary use id as token,
+            # allow every user to edit and return is_authenticated as True
+            return token, "edit", True
 
         return await cls.authentication(websocket, token)
 
