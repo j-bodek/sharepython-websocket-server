@@ -34,7 +34,7 @@ class BaseMessageHandler(AbstractMessageHandler):
             # of method exists by has attr because if method exists it doesn't mean
             # that it should be treated as operation (for example dispatch, if it
             # will be called infinie loop will occure)
-            if operation in self.operation_names[client.mode]:
+            if operation in self.operation_names.get(client.mode, []):
                 handler = getattr(self, operation.lower())
             else:
                 handler = self.operation_not_allowed

@@ -46,9 +46,11 @@ class TestBaseMessageHandler(IsolatedAsyncioTestCase):
         """
 
         self.message_handler.mocked_operation = mock.AsyncMock()
-        self.message_handler.operation_names = ["mocked_operation"]
+        self.message_handler.operation_names = {"some_mode": ["mocked_operation"]}
         message = json.dumps({"operation": "mocked_operation", "data": "message"})
-        await self.message_handler.dispatch(message, "codespace_uuid", mock.AsyncMock())
+        await self.message_handler.dispatch(
+            message, "codespace_uuid", mock.AsyncMock(mode="some_mode")
+        )
         self.assertEqual(self.message_handler.mocked_operation.call_count, 1)
 
     async def test_operation_not_allowed_method(self):

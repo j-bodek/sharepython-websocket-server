@@ -15,6 +15,7 @@ class TestClient(IsolatedAsyncioTestCase):
             protocol=self.protocol,
             channel_id=self.channel_id,
             message_handler=self.message_handler,
+            mode="edit",
         )
 
     async def test_if_dispatch_called_on_new_message(self):

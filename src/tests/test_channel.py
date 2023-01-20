@@ -72,6 +72,18 @@ class TestChannel(IsolatedAsyncioTestCase):
         for client in clients:
             client.send.assert_called_once_with("some_data")
 
+    async def test_create_client_method(self):
+        """
+        Test if Client will be initialized with valid parameters
+        """
+
+        protocol = mock.AsyncMock()
+        mode = "edit"
+        client = await self.channel.create_client(protocol, mode)
+        self.assertEqual(client.protocol, protocol)
+        self.assertEqual(client.mode, mode)
+        self.assertEqual(client.channel_id, self.channel_id)
+
     async def test_register_method(self):
         """
         Test if register method create client instance and add it to clients set

@@ -15,7 +15,7 @@ class Authenticate:
 
     async def __call__(
         self, websocket: Type[Websocket], token: str
-    ) -> tuple[str, str, bool]:
+    ) -> tuple[str, None, bool]:
         """
         Authenticate request by given token and if token is valid
         return codespace uuid, mode (used to determine client permissions),
@@ -24,7 +24,7 @@ class Authenticate:
 
         if not token:
             await websocket.close(1011, "Missing token")
-            return None, False
+            return None, None, False
 
         # send async request
         async with aiohttp.ClientSession() as session:
@@ -34,7 +34,7 @@ class Authenticate:
 
                 if resp.status != 200:
                     await websocket.close(1011, "Invalid token")
-                    return None, False
+                    return None, None, False
 
                 data = await resp.json()
                 return data["uuid"], data["mode"], True
