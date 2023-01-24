@@ -1,5 +1,4 @@
 import aiohttp
-from typing import Type
 from sanic import Websocket
 
 
@@ -14,7 +13,7 @@ class Authenticate:
     api_base_url = "http://api:8000/api/"
 
     async def __call__(
-        self, websocket: Type[Websocket], token: str
+        self, websocket: Websocket, token: str
     ) -> tuple[str, None, bool]:
         """
         Authenticate request by given token and if token is valid

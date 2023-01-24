@@ -1,6 +1,5 @@
 import secrets
 from server.redis import REDIS
-from typing import Type
 from dataclasses import dataclass, field
 from sanic import Websocket
 from server.handlers.base import AbstractMessageHandler
@@ -18,11 +17,11 @@ class Client(AbstractClient):
     """
 
     id: str = field(init=False, default_factory=lambda: secrets.token_urlsafe(12))
-    protocol: Type[Websocket]
+    protocol: Websocket
     # mode will be then used to determine which operation client can do
     mode: str
     channel_id: str
-    message_handler: Type[AbstractMessageHandler]
+    message_handler: AbstractMessageHandler
     # this value will be used to update codespace expiration
     # time everytime client add changes
     codespace_expire_update: int = field(init=False, default=0)

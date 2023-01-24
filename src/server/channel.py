@@ -3,7 +3,6 @@ from server.redis import REDIS
 import asyncio
 import aioredis
 from server.handlers.message_handler import message_handler
-from typing import Type
 from sanic import Websocket
 from dataclasses import dataclass, field
 from server.base import AbstractChannel, AbstractChannelCache
@@ -16,11 +15,11 @@ class Channel(AbstractChannel):
     It represents communication channel created for particular codespace
     """
 
-    cache: Type[AbstractChannelCache]
-    pubsub: Type[aioredis.client.PubSub]
+    cache: AbstractChannelCache
+    pubsub: aioredis.client.PubSub
     channel_id: str
     clients: set = field(init=False, default_factory=lambda: set())
-    lock: Type[asyncio.Lock] = field(init=False, default_factory=lambda: asyncio.Lock())
+    lock: asyncio.Lock = field(init=False, default_factory=lambda: asyncio.Lock())
     # define messages that should be handled by channel not clients
     # for example 'expire' message send when codespace data is expired
     handle_messages: list = field(init=False, default_factory=lambda: ["expired"])
@@ -61,7 +60,7 @@ class Channel(AbstractChannel):
         for client in self.clients:
             await client.send(payload)
 
-    async def register(self, client: Type[Client]):
+    async def register(self, client: Client):
         """
         Add client to clients set
         """
@@ -69,9 +68,7 @@ class Channel(AbstractChannel):
         async with self.lock:
             self.clients.add(client)
 
-    async def create_client(
-        self, websocket: Type[Websocket], mode: str
-    ) -> Type[Client]:
+    async def create_client(self, websocket: Websocket, mode: str) -> Client:
         """
         Create and return new client instance
         """
@@ -83,7 +80,7 @@ class Channel(AbstractChannel):
             message_handler=message_handler,
         )
 
-    async def leave(self, client: Type[Client]) -> None:
+    async def leave(self, client: Client) -> None:
         """
         Remove client from clients set and if no client left
         destroy channel and reset pubsub
@@ -106,9 +103,9 @@ class ChannelCache(AbstractChannelCache):
     """
 
     channels: set = field(init=False, default_factory=lambda: dict())
-    lock: Type[asyncio.Lock] = field(init=False, default_factory=lambda: asyncio.Lock())
+    lock: asyncio.Lock = field(init=False, default_factory=lambda: asyncio.Lock())
 
-    async def get_or_create(self, channel_id: str) -> Type[AbstractChannel]:
+    async def get_or_create(self, channel_id: str) -> AbstractChannel:
         """
         If channel exists create new one, and return it's instance.
         Otherwise just return channel instance
@@ -127,16 +124,14 @@ class ChannelCache(AbstractChannelCache):
 
     async def __create_channel(
         self, pubsub: REDIS.pubsub, channel_id: str
-    ) -> Type[AbstractChannel]:
+    ) -> AbstractChannel:
         """
         Creates and return new channel instance
         """
 
         return Channel(cache=self, pubsub=pubsub, channel_id=channel_id)
 
-    async def __add_channel(
-        self, channel_id: str, channel: Type[AbstractChannel]
-    ) -> None:
+    async def __add_channel(self, channel_id: str, channel: AbstractChannel) -> None:
         """
         Add new channel to channels dict
         """

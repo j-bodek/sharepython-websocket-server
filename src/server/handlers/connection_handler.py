@@ -1,7 +1,6 @@
 from server.channel import ChannelCache
 from server.authentication import Authenticate
 from sanic import Sanic, Websocket
-from typing import Type
 from server.base import AbstractClient, AbstractChannel
 import json
 
@@ -15,9 +14,7 @@ class ConnectionHandler:
     authentication = Authenticate()
 
     @classmethod
-    async def __call__(
-        cls, websocket: Type[Websocket], token: str, app: Type[Sanic]
-    ) -> None:
+    async def __call__(cls, websocket: Websocket, token: str, app: Sanic) -> None:
         # Authenticate incoming connection
         codespace_uuid, mode, is_authenticated = await cls.perform_authentication(
             websocket, token
@@ -40,7 +37,7 @@ class ConnectionHandler:
 
     @classmethod
     async def add_client_listener(
-        cls, client: Type[AbstractClient], channel: Type[AbstractChannel]
+        cls, client: AbstractClient, channel: AbstractChannel
     ) -> None:
         """
         Run client.listen() method
@@ -55,7 +52,7 @@ class ConnectionHandler:
 
     @classmethod
     def add_channel_listener(
-        cls, is_created: bool, channel: Type[AbstractChannel], app: Type[Sanic]
+        cls, is_created: bool, channel: AbstractChannel, app: Sanic
     ) -> None:
         """
         Run channel.listen() method in background
@@ -66,7 +63,7 @@ class ConnectionHandler:
 
     @classmethod
     async def perform_authentication(
-        cls, websocket: Type[Websocket], token: str
+        cls, websocket: Websocket, token: str
     ) -> tuple[str, str, bool]:
         """
         Perform authentication. Returns codespace uuid, and is_authenticated
@@ -81,7 +78,7 @@ class ConnectionHandler:
         return await cls.authentication(websocket, token)
 
     @classmethod
-    async def send_connection_succeed_msg(cls, client: Type[AbstractClient]) -> None:
+    async def send_connection_succeed_msg(cls, client: AbstractClient) -> None:
         """
         Inform client about successfull connection. In response send
         id assigned to client in channel

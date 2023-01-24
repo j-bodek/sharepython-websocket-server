@@ -1,6 +1,5 @@
 import json
 from server.redis import REDIS
-from typing import Type
 from server.base import AbstractClient
 from server.handlers.base import AbstractMessageHandler
 import logging
@@ -17,7 +16,7 @@ class BaseMessageHandler(AbstractMessageHandler):
     redis = None
 
     async def dispatch(
-        self, message: str, codespace_uuid: str, client: Type[AbstractClient]
+        self, message: str, codespace_uuid: str, client: AbstractClient
     ) -> None:
         """
         Try to dispatch to the right operation; if a operation doesn't exist
@@ -41,7 +40,7 @@ class BaseMessageHandler(AbstractMessageHandler):
             await handler(message, codespace_uuid, client)
 
     async def operation_not_allowed(
-        self, message: dict, codespace_uuid: str, client: Type[AbstractClient]
+        self, message: dict, codespace_uuid: str, client: AbstractClient
     ) -> None:
         """
         Close websocket connection and return proper reason
@@ -77,7 +76,7 @@ class MessageHandler(BaseMessageHandler):
     redis = REDIS
 
     async def insert_value(
-        self, message: dict, codespace_uuid: str, client: Type[AbstractClient]
+        self, message: dict, codespace_uuid: str, client: AbstractClient
     ) -> None:
         """
         This operation updates codespace code saved in redis and send
@@ -122,7 +121,7 @@ class MessageHandler(BaseMessageHandler):
         return code
 
     async def create_selection(
-        self, message: dict, codespace_uuid: str, client: Type[AbstractClient]
+        self, message: dict, codespace_uuid: str, client: AbstractClient
     ) -> None:
         """
         This operation is used to handle create_selection operation

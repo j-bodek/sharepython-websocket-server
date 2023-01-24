@@ -1,4 +1,3 @@
-from typing import Type
 from server.base import AbstractClient
 from abc import ABC, abstractmethod
 
@@ -20,12 +19,12 @@ class AbstractMessageHandler(ABC):
 
     @abstractmethod
     async def dispatch(
-        self, message: str, codespace_uuid: str, client: Type[AbstractClient]
+        self, message: str, codespace_uuid: str, client: AbstractClient
     ) -> None:
         pass
 
     @abstractmethod
     async def operation_not_allowed(
-        self, message: dict, codespace_uuid: str, client: Type[AbstractClient]
+        self, message: dict, codespace_uuid: str, client: AbstractClient
     ) -> None:
         pass
