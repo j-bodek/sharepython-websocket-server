@@ -9,6 +9,12 @@ class BaseMessageHandler(AbstractMessageHandler):
     """
     BaseMessageHandler provides generic methods dispatch and operation_not_allowed.
     It can be used to create more complex message handlers
+
+    It handles messages in following format:
+    {
+        "operation":"operation_name",
+        **kwargs
+    }
     """
 
     # operation name is dict of allowed operations for each client mode
@@ -57,15 +63,9 @@ class BaseMessageHandler(AbstractMessageHandler):
 
 class MessageHandler(BaseMessageHandler):
     """
-    This class is used to handle incoming websocket messages.
-    I created it to hermetise logic responsible for handling incoming messages,
-    and to prevent creation of huge client class
-
-    It handles messages in following format:
-    {
-        "operation":"operation_name",
-        **kwargs
-    }
+    This class is used to handle incoming websocket messages. I created it to hermetise
+    logic responsible for handling incoming messages, allow easy to extend operations
+    pool (following open-closed principal) and to prevent creation of huge client class
     """
 
     # allowed operations

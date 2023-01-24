@@ -45,7 +45,8 @@ class Channel(AbstractChannel):
 
     async def expired(self) -> None:
         """
-        Close connection for every client
+        Close connection for every client (called when codespace data
+        cached in redis expires)
         """
 
         for client in self.clients:
@@ -60,7 +61,7 @@ class Channel(AbstractChannel):
         for client in self.clients:
             await client.send(payload)
 
-    async def register(self, client: Client):
+    async def register(self, client: Client) -> None:
         """
         Add client to clients set
         """
@@ -115,6 +116,8 @@ class ChannelCache(AbstractChannelCache):
             if channel_id not in self.channels:
                 pubsub = REDIS.pubsub()
                 await pubsub.subscribe(channel_id)
+                # subscribe to redis keyspace events (remember to set them
+                # when running redis-server --notify-keyspace-events)
                 await pubsub.subscribe(f"__keyspace@0__:{channel_id}")
                 channel = await self.__create_channel(pubsub, channel_id)
                 await self.__add_channel(channel_id, channel)
