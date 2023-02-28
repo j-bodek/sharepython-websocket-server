@@ -7,7 +7,7 @@ WebSocket server used by [**PythonShare**](https://github.com/LilJack118/sharepy
 
 #### How it works?
 - **INCOMING CONNECTIONS**
-	- When new connection is made at first it has to be authenticated. To do that i send async request to [**sharepython-api** ](https://github.com/LilJack118/sharepython-api "**sharepython-api** ")and if everything is fine it resonses with status code 200 and codespace uuid. In other case 301 and then websocket connection is closed
+	- When new connection is made at first it has to be authenticated. To do that i send async request to [**sharepython-api** ](https://github.com/LilJack118/sharepython-api "**sharepython-api** ")and if everything is fine it resonses with status code 200 and codespace uuid. In other case 401 and then websocket connection is closed
 	- When connection is authenticated i check if Channel instance exists in ChannelsCache. If not,  new Channel instance and new PubSub instance is created.
 	- After that if Channel was created i'm adding new background task responsible for listening incoming messages from PubSub channel
 	- Then new client is registered (added) to Channel
