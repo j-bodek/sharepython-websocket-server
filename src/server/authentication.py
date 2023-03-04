@@ -1,6 +1,6 @@
+import os
 import aiohttp
 from sanic import Websocket
-
 
 class Authenticate:
     """
@@ -10,7 +10,7 @@ class Authenticate:
 
     # big thx https://stackoverflow.com/a/56297455/14579046
     # host should be name of container instead of localhost
-    api_base_url = "http://api:8000/api/"
+    api_base_url = os.environ.get("API_BASE_URL")
 
     async def __call__(
         self, websocket: Websocket, token: str
