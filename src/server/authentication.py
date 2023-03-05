@@ -2,6 +2,7 @@ import os
 import aiohttp
 from sanic import Websocket
 
+
 class Authenticate:
     """
     This class is used to authenticate incoming websocket connection.
